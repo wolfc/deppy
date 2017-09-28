@@ -19,36 +19,45 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.beach.deppy;
+package org.jboss.beach.maven.eventspy;
 
-import org.apache.maven.eventspy.AbstractEventSpy;
 import org.apache.maven.eventspy.EventSpy;
-import org.apache.maven.execution.MavenExecutionResult;
 import org.codehaus.plexus.component.annotations.Component;
 
-import java.util.Optional;
-
 /**
- * Catch and hold the MavenExecutionResult.
- *
- * Note that it is used through CurrentEventSpy, so this class does not represent a Plexus Component.
+ * Allow an EventSpy to be specified in current invocation context.
  */
-public class DeppyEventSpy extends AbstractEventSpy {
-    private Optional<MavenExecutionResult> mavenExecutionResult = Optional.empty();
+@Component(role = EventSpy.class)
+public class CurrentEventSpy implements EventSpy {
+    private static final ThreadLocal<EventSpy> current = new ThreadLocal<>();
 
-    public Optional<MavenExecutionResult> getMavenExecutionResult() {
-        return mavenExecutionResult;
+    @Override
+    public void close() throws Exception {
+        invoke(EventSpy::close);
+    }
+
+    @Override
+    public void init(final Context context) throws Exception {
+        invoke(spy -> { spy.init(context); });
+    }
+
+    protected void invoke(final ThrowingConsumer<EventSpy, Exception> call) throws Exception {
+        final EventSpy spy = current.get();
+        if (spy != null) call.accept(spy);
+        else throw new IllegalStateException("No current EventSpy");
     }
 
     @Override
     public void onEvent(final Object event) throws Exception {
-        super.onEvent(event);
-        if (event instanceof MavenExecutionResult) {
-            onMavenExecutionResult((MavenExecutionResult) event);
-        }
+        invoke(spy -> { spy.onEvent(event); });
+
     }
 
-    private void onMavenExecutionResult(final MavenExecutionResult result) {
-        mavenExecutionResult = Optional.of(result);
+    public static void remove() {
+        current.remove();
+    }
+
+    public static void set(final EventSpy spy) {
+        current.set(spy);
     }
 }

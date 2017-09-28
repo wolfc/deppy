@@ -19,24 +19,9 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.beach.deppy;
+package org.jboss.beach.maven.eventspy;
 
-import org.apache.maven.cli.MavenCli;
-import org.jboss.beach.maven.eventspy.CurrentEventSpy;
-
-public class Deppy {
-    public static void main(final String[] args) throws Exception {
-        System.setProperty(MavenCli.MULTIMODULE_PROJECT_DIRECTORY, ".");
-        final DeppyEventSpy eventSpy = new DeppyEventSpy();
-        CurrentEventSpy.set(eventSpy);
-        try {
-            final MavenCli cli = new MavenCli();
-            cli.doMain(new String[]{"dependency:resolve"}, ".", System.out, System.err);
-            eventSpy.getMavenExecutionResult().orElseThrow(IllegalStateException::new).getProject().getArtifacts().stream().forEach(a -> {
-                System.out.println("> " + a);
-            });
-        } finally {
-            CurrentEventSpy.remove();
-        }
-    }
+@FunctionalInterface
+interface ThrowingConsumer<T, E extends Throwable> {
+    void accept(T t) throws E;
 }
