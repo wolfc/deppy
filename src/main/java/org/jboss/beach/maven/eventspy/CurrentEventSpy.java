@@ -43,7 +43,15 @@ public class CurrentEventSpy implements EventSpy {
 
     protected void invoke(final ThrowingConsumer<EventSpy, Exception> call) throws Exception {
         final EventSpy spy = current.get();
-        if (spy != null) call.accept(spy);
+        if (spy != null) {
+            try {
+                call.accept(spy);
+            } catch (Exception e) {
+                // TODO: only when maven is in debug mode
+                e.printStackTrace();
+                throw e;
+            }
+        }
         else throw new IllegalStateException("No current EventSpy");
     }
 
