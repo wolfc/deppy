@@ -42,8 +42,20 @@ public class DeppyArtifact implements Comparable<DeppyArtifact> {
         return artifact;
     }
 
+    public String getArtifactId() {
+        return artifact.getArtifactId();
+    }
+
+    public String getGroupId() {
+        return artifact.getGroupId();
+    }
+
     Model getModel() {
         return model;
+    }
+
+    public String getVersion() {
+        return artifact.getVersion();
     }
 
     @Override

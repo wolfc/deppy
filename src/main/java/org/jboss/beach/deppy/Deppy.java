@@ -35,6 +35,28 @@ import java.util.stream.Stream;
 import static java.util.Optional.ofNullable;
 
 public class Deppy {
+    private final String mavenProjectLocation;
+    private final MavenProject mavenProject;
+    private final DeppyArtifact artifact;
+    private final Stream<DeppyArtifact> artifacts;
+
+    public Deppy(final String mavenProjectLocation) {
+        this.mavenProjectLocation = mavenProjectLocation;
+
+        System.setProperty(MavenCli.MULTIMODULE_PROJECT_DIRECTORY, ".");
+        final DeppyEventSpy eventSpy = new DeppyEventSpy();
+        CurrentEventSpy.set(eventSpy);
+        try {
+            final MavenCli cli = new MavenCli();
+            cli.doMain(new String[]{"dependency:resolve"}, mavenProjectLocation, System.out, System.err);
+            this.mavenProject = eventSpy.getMavenExecutionResult().orElseThrow(IllegalStateException::new).getProject();
+            this.artifacts = Stream.of(mavenProject).flatMap(p -> Stream.concat(Stream.of(p), p.getCollectedProjects().stream())).map(MavenProject::getArtifacts).flatMap(Set::stream).collect(Collectors.toSet()).stream().map(a -> new DeppyArtifact(a, eventSpy.modelOf(a)));
+        } finally {
+            CurrentEventSpy.remove();
+        }
+        this.artifact = new DeppyArtifact(mavenProject.getArtifact(), mavenProject.getModel());
+    }
+
     public static void main(final String[] args) throws Exception {
         final String workingDirectory = args != null && args.length > 0 ? args[0] : ".";
         getDependencies(workingDirectory).sorted().forEach(a -> {
@@ -45,16 +67,25 @@ public class Deppy {
         });
     }
 
+    public Stream<DeppyArtifact> getArtifacts() {
+        return artifacts;
+    }
+
+    @Deprecated
     public static Stream<DeppyArtifact> getDependencies(final String mavenProjectLocation) {
-        System.setProperty(MavenCli.MULTIMODULE_PROJECT_DIRECTORY, ".");
-        final DeppyEventSpy eventSpy = new DeppyEventSpy();
-        CurrentEventSpy.set(eventSpy);
-        try {
-            final MavenCli cli = new MavenCli();
-            cli.doMain(new String[]{"dependency:resolve"}, mavenProjectLocation, System.out, System.err);
-            return Stream.of(eventSpy.getMavenExecutionResult().orElseThrow(IllegalStateException::new).getProject()).flatMap(p -> Stream.concat(Stream.of(p), p.getCollectedProjects().stream())).map(MavenProject::getArtifacts).flatMap(Set::stream).collect(Collectors.toSet()).stream().map(a -> new DeppyArtifact(a, eventSpy.modelOf(a)));
-        } finally {
-            CurrentEventSpy.remove();
-        }
+        return new Deppy(mavenProjectLocation).artifacts;
+    }
+
+    /**
+     * @deprecated use getProjectArtifact
+     * @return
+     */
+    @Deprecated
+    public MavenProject getMavenProject() {
+        return mavenProject;
+    }
+
+    public DeppyArtifact getProjectArtifact() {
+        return artifact;
     }
 }

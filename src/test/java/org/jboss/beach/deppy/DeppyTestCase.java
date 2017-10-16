@@ -21,11 +21,36 @@
  */
 package org.jboss.beach.deppy;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 public class DeppyTestCase {
+    private static Deppy instance;
+
+    @BeforeClass
+    public static void beforeClass() {
+        instance = new Deppy(".");
+    }
+
+    @Test
+    public void testArtifacts() {
+        assertNotNull(instance.getArtifacts());
+    }
+
     @Test
     public void testDeppy() throws Exception {
         Deppy.main(new String[]{});
+    }
+
+    @Test
+    public void testProjectArtifact() {
+        final DeppyArtifact project = instance.getProjectArtifact();
+        assertNotNull(project);
+        assertEquals("org.jboss.beach", project.getGroupId());
+        assertEquals("jboss-beach-deppy", project.getArtifactId());
+        assertNotNull(project.getVersion()); // semantics of version are not important here
     }
 }
