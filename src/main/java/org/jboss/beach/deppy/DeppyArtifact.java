@@ -21,21 +21,24 @@
  */
 package org.jboss.beach.deppy;
 
-import org.apache.maven.artifact.Artifact;
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.model.Model;
+import org.eclipse.aether.artifact.Artifact;
 
 public class DeppyArtifact implements Comparable<DeppyArtifact> {
+    private final DeppyEventSpy eventSpy;
     private final Artifact artifact;
     private final Model model;
 
-    DeppyArtifact(final Artifact artifact, final Model model) {
+    DeppyArtifact(final DeppyEventSpy eventSpy, final Artifact artifact, final Model model) {
+        this.eventSpy = eventSpy;
         this.artifact = artifact;
         this.model = model;
     }
 
     @Override
     public int compareTo(final DeppyArtifact other) {
-        return artifact.compareTo(other.artifact);
+        return AetherArtifactComparator.INSTANCE.compare(artifact, other.artifact);
     }
 
     Artifact getArtifact() {
@@ -52,6 +55,12 @@ public class DeppyArtifact implements Comparable<DeppyArtifact> {
 
     Model getModel() {
         return model;
+    }
+
+    DeppyArtifact getParent() {
+        final Artifact artifact = AetherArtifactHelper.toArtifact(model.getParent());
+        final Model model = eventSpy.modelOf(RepositoryUtils.toArtifact(artifact));
+        return new DeppyArtifact(this.eventSpy, artifact, model);
     }
 
     public String getVersion() {

@@ -46,6 +46,14 @@ public class DeppyTestCase {
     }
 
     @Test
+    public void testParent() {
+        final DeppyArtifact parent = instance.getProjectArtifact().getParent();
+        assertEquals("org.jboss", parent.getGroupId());
+        assertEquals("jboss-parent", parent.getArtifactId());
+        assertNotNull(parent.getVersion()); // semantics of version are not important here
+    }
+
+    @Test
     public void testProjectArtifact() {
         final DeppyArtifact project = instance.getProjectArtifact();
         assertNotNull(project);

@@ -21,6 +21,7 @@
  */
 package org.jboss.beach.deppy;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.cli.MavenCli;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Scm;
@@ -50,11 +51,11 @@ public class Deppy {
             final MavenCli cli = new MavenCli();
             cli.doMain(new String[]{"dependency:resolve"}, mavenProjectLocation, System.out, System.err);
             this.mavenProject = eventSpy.getMavenExecutionResult().orElseThrow(IllegalStateException::new).getProject();
-            this.artifacts = Stream.of(mavenProject).flatMap(p -> Stream.concat(Stream.of(p), p.getCollectedProjects().stream())).map(MavenProject::getArtifacts).flatMap(Set::stream).collect(Collectors.toSet()).stream().map(a -> new DeppyArtifact(a, eventSpy.modelOf(a)));
+            this.artifacts = Stream.of(mavenProject).flatMap(p -> Stream.concat(Stream.of(p), p.getCollectedProjects().stream())).map(MavenProject::getArtifacts).flatMap(Set::stream).collect(Collectors.toSet()).stream().map(a -> new DeppyArtifact(eventSpy, RepositoryUtils.toArtifact(a), eventSpy.modelOf(a)));
         } finally {
             CurrentEventSpy.remove();
         }
-        this.artifact = new DeppyArtifact(mavenProject.getArtifact(), mavenProject.getModel());
+        this.artifact = new DeppyArtifact(eventSpy, RepositoryUtils.toArtifact(mavenProject.getArtifact()), mavenProject.getModel());
     }
 
     public static void main(final String[] args) throws Exception {
