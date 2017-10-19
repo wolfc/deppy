@@ -57,7 +57,7 @@ public class DeppyArtifact implements Comparable<DeppyArtifact> {
         return model;
     }
 
-    DeppyArtifact getParent() {
+    public DeppyArtifact getParent() {
         final Artifact artifact = AetherArtifactHelper.toArtifact(model.getParent());
         final Model model = eventSpy.modelOf(RepositoryUtils.toArtifact(artifact));
         return new DeppyArtifact(this.eventSpy, artifact, model);
