@@ -23,6 +23,7 @@ package org.jboss.beach.deppy;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.eclipse.aether.artifact.Artifact;
 
 public class DeppyArtifact implements Comparable<DeppyArtifact> {
@@ -33,6 +34,7 @@ public class DeppyArtifact implements Comparable<DeppyArtifact> {
     DeppyArtifact(final DeppyEventSpy eventSpy, final Artifact artifact, final Model model) {
         this.eventSpy = eventSpy;
         this.artifact = artifact;
+        // note that system scope artifacts have no model
         this.model = model;
     }
 
@@ -58,7 +60,10 @@ public class DeppyArtifact implements Comparable<DeppyArtifact> {
     }
 
     public DeppyArtifact getParent() {
-        final Artifact artifact = AetherArtifactHelper.toArtifact(model.getParent());
+        if (model == null) return null; // system scope artifacts have no model
+        final Parent parent = model.getParent();
+        if (parent == null) return null;
+        final Artifact artifact = AetherArtifactHelper.toArtifact(parent);
         final Model model = eventSpy.modelOf(RepositoryUtils.toArtifact(artifact));
         return new DeppyArtifact(this.eventSpy, artifact, model);
     }
