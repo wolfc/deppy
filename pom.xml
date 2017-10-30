@@ -94,4 +94,10 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <scm>
+        <connection>scm:git:git://github.com/jboss-set/deppy.git</connection>
+        <developerConnection>scm:git:git@github.com:jboss-set/deppy.git</developerConnection>
+        <url>https://github.com/jboss-set/deppy</url>
+    </scm>
 </project>
