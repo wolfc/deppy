@@ -10,7 +10,7 @@
 
     <groupId>org.jboss.beach</groupId>
     <artifactId>jboss-beach-deppy</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -98,6 +98,6 @@
         <connection>scm:git:git://github.com/jboss-set/deppy.git</connection>
         <developerConnection>scm:git:git@github.com:jboss-set/deppy.git</developerConnection>
         <url>https://github.com/jboss-set/deppy</url>
-      <tag>jboss-beach-deppy-0.0.1</tag>
+      <tag>HEAD</tag>
   </scm>
 </project>
