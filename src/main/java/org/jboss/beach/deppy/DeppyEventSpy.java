@@ -27,7 +27,10 @@ import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionResult;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.repository.internal.ArtifactDescriptorReaderDelegate;
+import org.apache.maven.repository.internal.ArtifactDescriptorUtils;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -41,6 +44,8 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -55,6 +60,7 @@ public class DeppyEventSpy extends AbstractEventSpy {
     private RepositorySystemSession repositorySystemSession;
     private Optional<MavenExecutionResult> mavenExecutionResult = Optional.empty();
     private final Map<org.apache.maven.artifact.Artifact, Model> artifacts = new HashMap<>();
+    private ModelBuilder modelBuilder;
 
     public Optional<MavenExecutionResult> getMavenExecutionResult() {
         return mavenExecutionResult;
@@ -92,6 +98,7 @@ public class DeppyEventSpy extends AbstractEventSpy {
         if (event.getType() == ExecutionEvent.Type.ProjectDiscoveryStarted) {
             try {
                 this.artifactDescriptorReader = Objects.requireNonNull(container.lookup(ArtifactDescriptorReader.class), "no artifact descriptor reader");
+                this.modelBuilder = container.lookup(ModelBuilder.class);
             } catch (ComponentLookupException e) {
                 throw new RuntimeException("failed to find artifact descriptor reader", e);
             }
@@ -118,24 +125,12 @@ public class DeppyEventSpy extends AbstractEventSpy {
     private void onRepositoryEvent(RepositoryEvent event) {
         //new Exception("onRepositoryEvent").printStackTrace();
         if (event.getType() == RepositoryEvent.EventType.ARTIFACT_RESOLVED) {
-            // no handling of events when we ask for resolution ourselves
-            if (SILENCED.get()) return;
             final Artifact artifact = event.getArtifact();
-            final ArtifactRepository repository = event.getRepository();
-            final List<RemoteRepository> remoteRepositories;
-            if (repository != null && repository instanceof RemoteRepository) remoteRepositories = Arrays.asList((RemoteRepository) event.getRepository());
-            else remoteRepositories = Collections.EMPTY_LIST;
-            final ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(artifact, remoteRepositories, null);
-            try {
-                SILENCED.set(true);
-                final ArtifactDescriptorResult result = artifactDescriptorReader.readArtifactDescriptor(repositorySystemSession, request);
-                final Model model = (Model) result.getProperties().get(Model.class.getName());
-                artifacts.put(RepositoryUtils.toArtifact(artifact), model);
-            } catch (ArtifactDescriptorException e) {
-                throw new RuntimeException(e);
-            } finally {
-                SILENCED.set(false);
-            }
+            Artifact pomArtifact = ArtifactDescriptorUtils.toPomArtifact(artifact);
+            String pathForLocalArtifact = repositorySystemSession.getLocalRepositoryManager().getPathForLocalArtifact(pomArtifact);
+            Path pathPomFile = Paths.get(repositorySystemSession.getLocalRepository().getBasedir().getPath(), pathForLocalArtifact);
+            final Model rawModel = modelBuilder.buildRawModel(pathPomFile.toFile(), ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL, false).get();
+            artifacts.put(RepositoryUtils.toArtifact(artifact), rawModel);
         }
     }
 }
